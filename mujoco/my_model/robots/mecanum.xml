@@ -1,0 +1,368 @@
+<mujoco model="mecanum_car">
+    <!-- Units: m, kg, s, rad. +X forward, +Y left, +Z up.
+         User chassis: 0.30 x 0.20 x 0.03 m, 6 kg; centre coincides with base_link.
+         Measured wheels: diameter 0.05 m, width 0.03 m, wheelbase 0.20 m, track 0.25 m.
+         Wheel centres are 0.010 m below base_link; nominal chassis clearance is 0.020 m.
+         Each complete wheel is 0.120 kg: 0.108 kg hub assembly + 12 rollers of 0.001 kg.
+         base_link is the floating root; wheels mount directly to its sides on short axles. -->
+    <compiler angle="radian" autolimits="true" meshdir="assets/meshs" />
+    <option timestep="0.001" integrator="implicitfast" solver="Newton" iterations="100" tolerance="1e-9" gravity="0 0 -9.81" />
+    <statistic center="0 0 0.035" extent="0.5" />
+    <visual>
+        <global linewidth="0.2" />
+        <headlight ambient="0.3 0.3 0.3" diffuse="0.4 0.4 0.4" specular="0.1 0.1 0.1" />
+        <rgba rangefinder="0.1 0.65 0.5 0.22" />
+    </visual>
+    <custom>
+        <numeric name="wheel_radius" data="0.025" />
+        <numeric name="lidar_min_range" data="0.05" />
+    </custom>
+    <default>
+        <joint type="hinge" limited="false" />
+        <geom contype="1" conaffinity="0" condim="3" friction="1.0 0.005 0.0001" solref="0.005 1" solimp="0.95 0.99 0.001" />
+        <default class="wheel_joint">
+            <joint axis="0 1 0" damping="0.001" armature="0.00001" />
+        </default>
+        <default class="roller_joint">
+            <joint damping="0.00001" armature="0.0000001" />
+        </default>
+        <default class="visual">
+            <geom contype="0" conaffinity="0" group="2" mass="0" />
+        </default>
+        <default class="collision">
+            <geom group="3" rgba="0.25 0.25 0.25 0.35" />
+        </default>
+    </default>
+    <asset>
+        <texture name="sky" type="skybox" builtin="gradient" rgb1="0.82 0.85 0.88" rgb2="0.96 0.97 0.98" width="512" height="512" />
+        <texture name="floor_checker" type="2d" builtin="checker" rgb1="0.58 0.60 0.62" rgb2="0.50 0.52 0.54" width="512" height="512" />
+        <material name="floor_material" texture="floor_checker" texuniform="true" texrepeat="5 5" reflectance="0" specular="0.03" shininess="0.1" />
+        <mesh name="wheel_1" file="wheel_1.stl" scale="0.196850394 0.303030303 0.196850394" />
+        <mesh name="wheel_2" file="wheel_2.stl" scale="0.196850394 0.303030303 0.196850394" />
+    </asset>
+    <worldbody>
+        <light name="sun" pos="0.3 -0.3 1" dir="-0.3 0.3 -1" directional="true" diffuse="0.7 0.7 0.7" specular="0.1 0.1 0.1" castshadow="true" />
+        <light name="fill" pos="-1 1 2" dir="0.4 -0.4 -1" directional="true" diffuse="0.25 0.25 0.25" specular="0 0 0" castshadow="false" />
+        <geom name="floor" type="plane" pos="0 0 0" size="20 20 0.1" material="floor_material" contype="1" conaffinity="1" />
+        
+        <geom name="lidar_wall_front" type="box" pos="1.2 0 0.15" size="0.025 1.225 0.15" rgba="0.52 0.60 0.65 1" contype="1" conaffinity="1" />
+        <geom name="lidar_wall_back" type="box" pos="-1.2 0 0.15" size="0.025 1.225 0.15" rgba="0.52 0.60 0.65 1" contype="1" conaffinity="1" />
+        <geom name="lidar_wall_left" type="box" pos="0 1.2 0.15" size="1.175 0.025 0.15" rgba="0.60 0.65 0.68 1" contype="1" conaffinity="1" />
+        <geom name="lidar_wall_right" type="box" pos="0 -1.2 0.15" size="1.175 0.025 0.15" rgba="0.60 0.65 0.68 1" contype="1" conaffinity="1" />
+        <!-- Wheel bottom starts 1 mm above the floor.
+            Wheel axes are 10 mm below the chassis centre, giving 20 mm ground clearance.
+            Short horizontal axles connect the chassis sides directly to the wheel hubs. 
+            车轮底部从地面以上1毫米处开始。  
+            四个轮轴相对底盘中心的 z=-0.01 m，底盘名义离地间隙为 0.02 m。  
+            短水平轴将底盘两侧直接连接到车轮轮毂上 -->
+        <body name="base_link" pos="0 0 0.036">
+            <freejoint name="base_free_joint" />
+            <geom name="base_link_geom" type="box" size="0.15 0.10 0.015" pos="0 0 0" rgba="0.15 0.25 0.35 1" mass="6.0" />
+            <site name="base_imu" pos="0 0 0" size="0.003" rgba="1 0.2 0.2 1" />
+            <geom name="front_left_axle" class="visual" type="cylinder" fromto="0.1 0.095 -0.01 0.1 0.115 -0.01" size="0.004" rgba="0.65 0.65 0.65 1" />
+            <geom name="front_right_axle" class="visual" type="cylinder" fromto="0.1 -0.095 -0.01 0.1 -0.115 -0.01" size="0.004" rgba="0.65 0.65 0.65 1" />
+            <geom name="back_left_axle" class="visual" type="cylinder" fromto="-0.1 0.095 -0.01 -0.1 0.115 -0.01" size="0.004" rgba="0.65 0.65 0.65 1" />
+            <geom name="back_right_axle" class="visual" type="cylinder" fromto="-0.1 -0.095 -0.01 -0.1 -0.115 -0.01" size="0.004" rgba="0.65 0.65 0.65 1" />
+            <!-- 创建一个名为 tracking 的摄像机，跟踪机器人整体质心，并设置摄像机相对于跟踪目标的位置和朝向 -->
+            <camera name="tracking" mode="trackcom" pos="0.45 -0.45 0.35" xyaxes="0.707107 0.707107 0 -0.408248 0.408248 0.816497" />
+
+            <body name="lidar_link" pos="0 0 0.045">
+                <geom name="lidar_mount" type="cylinder" pos="0 0 -0.025" size="0.018 0.005" rgba="0.32 0.35 0.38 1" mass="0.02" />
+                <geom name="lidar_base" type="cylinder" pos="0 0 -0.013" size="0.030 0.007" rgba="0.17 0.19 0.22 1" mass="0.06" />
+                <geom name="lidar_window" type="cylinder" pos="0 0 0.003" size="0.028 0.009" rgba="0.26 0.08 0.07 1" mass="0.05" />
+                <geom name="lidar_cap" type="cylinder" pos="0 0 0.014" size="0.030 0.003" rgba="0.20 0.23 0.26 1" mass="0.02" />
+                <geom name="lidar_front_marker" class="visual" type="box" pos="0.018 0 0.018" size="0.008 0.002 0.001" rgba="0.95 0.48 0.12 1" />
+                <replicate count="360" euler="0 0 0.017453292519943295">
+                    <site name="lidar_ray" pos="0 0 0" zaxis="1 0 0" size="0.001" group="4" rgba="0 0 0 0" />
+                </replicate>
+            </body>
+
+            <body name="front_right_wheel_intermediate_link" pos="0.1 -0.125 -0.01">
+                <inertial pos="0 0 0" mass="0.108" diaginertia="0.000024975 0.00003375 0.000024975" />
+                <joint name="front_right_wheel_rolling_joint" class="wheel_joint" />
+                <geom name="front_right_hub_collision" class="collision" type="cylinder" size="0.008 0.010" quat="0.707106781 0.707106781 0 0" />
+                <geom name="front_right_wheel_visual" class="visual" type="mesh" mesh="wheel_2" rgba="0.15 0.15 0.15 1" />
+                <body name="front_right_roller_0_link" pos="0.02 0 0" quat="0.923879533 -0.382683432 -0 0">
+                    <joint name="front_right_slipping_0_joint" class="roller_joint" axis="0 0 1" />
+                    <inertial pos="0 0 0" mass="0.001" diaginertia="5e-8 5e-8 1e-8" />
+                    <geom name="front_right_roller_0_collision" class="collision" type="ellipsoid" size="0.005 0.005 0.015" />
+                </body>
+                <body name="front_right_roller_1_link" pos="0.0173205081 0 0.01" quat="0.897878732 -0.393765191 -0.196882596 0">
+                    <joint name="front_right_slipping_1_joint" class="roller_joint" axis="0 0 1" />
+                    <inertial pos="0 0 0" mass="0.001" diaginertia="5e-8 5e-8 1e-8" />
+                    <geom name="front_right_roller_1_collision" class="collision" type="ellipsoid" size="0.005 0.005 0.015" />
+                </body>
+                <body name="front_right_roller_2_link" pos="0.01 0 0.0173205081" quat="0.822664388 -0.429766252 -0.372188492 0">
+                    <joint name="front_right_slipping_2_joint" class="roller_joint" axis="0 0 1" />
+                    <inertial pos="0 0 0" mass="0.001" diaginertia="5e-8 5e-8 1e-8" />
+                    <geom name="front_right_roller_2_collision" class="collision" type="ellipsoid" size="0.005 0.005 0.015" />
+                </body>
+                <body name="front_right_roller_3_link" pos="1.2246468e-18 0 0.02" quat="0.707106781 -0.5 -0.5 0">
+                    <joint name="front_right_slipping_3_joint" class="roller_joint" axis="0 0 1" />
+                    <inertial pos="0 0 0" mass="0.001" diaginertia="5e-8 5e-8 1e-8" />
+                    <geom name="front_right_roller_3_collision" class="collision" type="ellipsoid" size="0.005 0.005 0.015" />
+                </body>
+                <body name="front_right_roller_4_link" pos="-0.01 0 0.0173205081" quat="0.568527312 -0.621875824 -0.538560261 0">
+                    <joint name="front_right_slipping_4_joint" class="roller_joint" axis="0 0 1" />
+                    <inertial pos="0 0 0" mass="0.001" diaginertia="5e-8 5e-8 1e-8" />
+                    <geom name="front_right_roller_4_collision" class="collision" type="ellipsoid" size="0.005 0.005 0.015" />
+                </body>
+                <body name="front_right_roller_5_link" pos="-0.0173205081 0 0.01" quat="0.440242867 -0.803087152 -0.401543576 0">
+                    <joint name="front_right_slipping_5_joint" class="roller_joint" axis="0 0 1" />
+                    <inertial pos="0 0 0" mass="0.001" diaginertia="5e-8 5e-8 1e-8" />
+                    <geom name="front_right_roller_5_collision" class="collision" type="ellipsoid" size="0.005 0.005 0.015" />
+                </body>
+                <body name="front_right_roller_6_link" pos="-0.02 0 2.4492936e-18" quat="0.382683432 -0.923879533 -1.13142611e-16 0">
+                    <joint name="front_right_slipping_6_joint" class="roller_joint" axis="0 0 1" />
+                    <inertial pos="0 0 0" mass="0.001" diaginertia="5e-8 5e-8 1e-8" />
+                    <geom name="front_right_roller_6_collision" class="collision" type="ellipsoid" size="0.005 0.005 0.015" />
+                </body>
+                <body name="front_right_roller_7_link" pos="-0.0173205081 0 -0.01" quat="0.440242867 -0.803087152 0.401543576 0">
+                    <joint name="front_right_slipping_7_joint" class="roller_joint" axis="0 0 1" />
+                    <inertial pos="0 0 0" mass="0.001" diaginertia="5e-8 5e-8 1e-8" />
+                    <geom name="front_right_roller_7_collision" class="collision" type="ellipsoid" size="0.005 0.005 0.015" />
+                </body>
+                <body name="front_right_roller_8_link" pos="-0.01 0 -0.0173205081" quat="0.568527312 -0.621875824 0.538560261 0">
+                    <joint name="front_right_slipping_8_joint" class="roller_joint" axis="0 0 1" />
+                    <inertial pos="0 0 0" mass="0.001" diaginertia="5e-8 5e-8 1e-8" />
+                    <geom name="front_right_roller_8_collision" class="collision" type="ellipsoid" size="0.005 0.005 0.015" />
+                </body>
+                <body name="front_right_roller_9_link" pos="-3.6739404e-18 0 -0.02" quat="0.707106781 -0.5 0.5 0">
+                    <joint name="front_right_slipping_9_joint" class="roller_joint" axis="0 0 1" />
+                    <inertial pos="0 0 0" mass="0.001" diaginertia="5e-8 5e-8 1e-8" />
+                    <geom name="front_right_roller_9_collision" class="collision" type="ellipsoid" size="0.005 0.005 0.015" />
+                </body>
+                <body name="front_right_roller_10_link" pos="0.01 0 -0.0173205081" quat="0.822664388 -0.429766252 0.372188492 0">
+                    <joint name="front_right_slipping_10_joint" class="roller_joint" axis="0 0 1" />
+                    <inertial pos="0 0 0" mass="0.001" diaginertia="5e-8 5e-8 1e-8" />
+                    <geom name="front_right_roller_10_collision" class="collision" type="ellipsoid" size="0.005 0.005 0.015" />
+                </body>
+                <body name="front_right_roller_11_link" pos="0.0173205081 0 -0.01" quat="0.897878732 -0.393765191 0.196882596 0">
+                    <joint name="front_right_slipping_11_joint" class="roller_joint" axis="0 0 1" />
+                    <inertial pos="0 0 0" mass="0.001" diaginertia="5e-8 5e-8 1e-8" />
+                    <geom name="front_right_roller_11_collision" class="collision" type="ellipsoid" size="0.005 0.005 0.015" />
+                </body>
+            </body>
+            <body name="front_left_wheel_intermediate_link" pos="0.1 0.125 -0.01">
+                <inertial pos="0 0 0" mass="0.108" diaginertia="0.000024975 0.00003375 0.000024975" />
+                <joint name="front_left_wheel_rolling_joint" class="wheel_joint" />
+                <geom name="front_left_hub_collision" class="collision" type="cylinder" size="0.008 0.010" quat="0.707106781 0.707106781 0 0" />
+                <geom name="front_left_wheel_visual" class="visual" type="mesh" mesh="wheel_1" rgba="0.15 0.15 0.15 1" />
+                <body name="front_left_roller_0_link" pos="0.02 0 0" quat="0.382683432 -0.923879533 0 0">
+                    <joint name="front_left_slipping_0_joint" class="roller_joint" axis="0 0 1" />
+                    <inertial pos="0 0 0" mass="0.001" diaginertia="5e-8 5e-8 1e-8" />
+                    <geom name="front_left_roller_0_collision" class="collision" type="ellipsoid" size="0.005 0.005 0.015" />
+                </body>
+                <body name="front_left_roller_1_link" pos="0.0173205081 0 0.01" quat="0.440242867 -0.803087152 0.401543576 0">
+                    <joint name="front_left_slipping_1_joint" class="roller_joint" axis="0 0 1" />
+                    <inertial pos="0 0 0" mass="0.001" diaginertia="5e-8 5e-8 1e-8" />
+                    <geom name="front_left_roller_1_collision" class="collision" type="ellipsoid" size="0.005 0.005 0.015" />
+                </body>
+                <body name="front_left_roller_2_link" pos="0.01 0 0.0173205081" quat="0.568527312 -0.621875824 0.538560261 0">
+                    <joint name="front_left_slipping_2_joint" class="roller_joint" axis="0 0 1" />
+                    <inertial pos="0 0 0" mass="0.001" diaginertia="5e-8 5e-8 1e-8" />
+                    <geom name="front_left_roller_2_collision" class="collision" type="ellipsoid" size="0.005 0.005 0.015" />
+                </body>
+                <body name="front_left_roller_3_link" pos="1.2246468e-18 0 0.02" quat="0.707106781 -0.5 0.5 0">
+                    <joint name="front_left_slipping_3_joint" class="roller_joint" axis="0 0 1" />
+                    <inertial pos="0 0 0" mass="0.001" diaginertia="5e-8 5e-8 1e-8" />
+                    <geom name="front_left_roller_3_collision" class="collision" type="ellipsoid" size="0.005 0.005 0.015" />
+                </body>
+                <body name="front_left_roller_4_link" pos="-0.01 0 0.0173205081" quat="0.822664388 -0.429766252 0.372188492 0">
+                    <joint name="front_left_slipping_4_joint" class="roller_joint" axis="0 0 1" />
+                    <inertial pos="0 0 0" mass="0.001" diaginertia="5e-8 5e-8 1e-8" />
+                    <geom name="front_left_roller_4_collision" class="collision" type="ellipsoid" size="0.005 0.005 0.015" />
+                </body>
+                <body name="front_left_roller_5_link" pos="-0.0173205081 0 0.01" quat="0.897878732 -0.393765191 0.196882596 0">
+                    <joint name="front_left_slipping_5_joint" class="roller_joint" axis="0 0 1" />
+                    <inertial pos="0 0 0" mass="0.001" diaginertia="5e-8 5e-8 1e-8" />
+                    <geom name="front_left_roller_5_collision" class="collision" type="ellipsoid" size="0.005 0.005 0.015" />
+                </body>
+                <body name="front_left_roller_6_link" pos="-0.02 0 2.4492936e-18" quat="0.923879533 -0.382683432 4.68652041e-17 0">
+                    <joint name="front_left_slipping_6_joint" class="roller_joint" axis="0 0 1" />
+                    <inertial pos="0 0 0" mass="0.001" diaginertia="5e-8 5e-8 1e-8" />
+                    <geom name="front_left_roller_6_collision" class="collision" type="ellipsoid" size="0.005 0.005 0.015" />
+                </body>
+                <body name="front_left_roller_7_link" pos="-0.0173205081 0 -0.01" quat="0.897878732 -0.393765191 -0.196882596 0">
+                    <joint name="front_left_slipping_7_joint" class="roller_joint" axis="0 0 1" />
+                    <inertial pos="0 0 0" mass="0.001" diaginertia="5e-8 5e-8 1e-8" />
+                    <geom name="front_left_roller_7_collision" class="collision" type="ellipsoid" size="0.005 0.005 0.015" />
+                </body>
+                <body name="front_left_roller_8_link" pos="-0.01 0 -0.0173205081" quat="0.822664388 -0.429766252 -0.372188492 0">
+                    <joint name="front_left_slipping_8_joint" class="roller_joint" axis="0 0 1" />
+                    <inertial pos="0 0 0" mass="0.001" diaginertia="5e-8 5e-8 1e-8" />
+                    <geom name="front_left_roller_8_collision" class="collision" type="ellipsoid" size="0.005 0.005 0.015" />
+                </body>
+                <body name="front_left_roller_9_link" pos="-3.6739404e-18 0 -0.02" quat="0.707106781 -0.5 -0.5 0">
+                    <joint name="front_left_slipping_9_joint" class="roller_joint" axis="0 0 1" />
+                    <inertial pos="0 0 0" mass="0.001" diaginertia="5e-8 5e-8 1e-8" />
+                    <geom name="front_left_roller_9_collision" class="collision" type="ellipsoid" size="0.005 0.005 0.015" />
+                </body>
+                <body name="front_left_roller_10_link" pos="0.01 0 -0.0173205081" quat="0.568527312 -0.621875824 -0.538560261 0">
+                    <joint name="front_left_slipping_10_joint" class="roller_joint" axis="0 0 1" />
+                    <inertial pos="0 0 0" mass="0.001" diaginertia="5e-8 5e-8 1e-8" />
+                    <geom name="front_left_roller_10_collision" class="collision" type="ellipsoid" size="0.005 0.005 0.015" />
+                </body>
+                <body name="front_left_roller_11_link" pos="0.0173205081 0 -0.01" quat="0.440242867 -0.803087152 -0.401543576 0">
+                    <joint name="front_left_slipping_11_joint" class="roller_joint" axis="0 0 1" />
+                    <inertial pos="0 0 0" mass="0.001" diaginertia="5e-8 5e-8 1e-8" />
+                    <geom name="front_left_roller_11_collision" class="collision" type="ellipsoid" size="0.005 0.005 0.015" />
+                </body>
+            </body>
+            <body name="back_right_wheel_intermediate_link" pos="-0.1 -0.125 -0.01">
+                <inertial pos="0 0 0" mass="0.108" diaginertia="0.000024975 0.00003375 0.000024975" />
+                <joint name="back_right_wheel_rolling_joint" class="wheel_joint" />
+                <geom name="back_right_hub_collision" class="collision" type="cylinder" size="0.008 0.010" quat="0.707106781 0.707106781 0 0" />
+                <geom name="back_right_wheel_visual" class="visual" type="mesh" mesh="wheel_1" rgba="0.15 0.15 0.15 1" />
+                <body name="back_right_roller_0_link" pos="0.02 0 0" quat="0.382683432 -0.923879533 0 0">
+                    <joint name="back_right_slipping_0_joint" class="roller_joint" axis="0 0 1" />
+                    <inertial pos="0 0 0" mass="0.001" diaginertia="5e-8 5e-8 1e-8" />
+                    <geom name="back_right_roller_0_collision" class="collision" type="ellipsoid" size="0.005 0.005 0.015" />
+                </body>
+                <body name="back_right_roller_1_link" pos="0.0173205081 0 0.01" quat="0.440242867 -0.803087152 0.401543576 0">
+                    <joint name="back_right_slipping_1_joint" class="roller_joint" axis="0 0 1" />
+                    <inertial pos="0 0 0" mass="0.001" diaginertia="5e-8 5e-8 1e-8" />
+                    <geom name="back_right_roller_1_collision" class="collision" type="ellipsoid" size="0.005 0.005 0.015" />
+                </body>
+                <body name="back_right_roller_2_link" pos="0.01 0 0.0173205081" quat="0.568527312 -0.621875824 0.538560261 0">
+                    <joint name="back_right_slipping_2_joint" class="roller_joint" axis="0 0 1" />
+                    <inertial pos="0 0 0" mass="0.001" diaginertia="5e-8 5e-8 1e-8" />
+                    <geom name="back_right_roller_2_collision" class="collision" type="ellipsoid" size="0.005 0.005 0.015" />
+                </body>
+                <body name="back_right_roller_3_link" pos="1.2246468e-18 0 0.02" quat="0.707106781 -0.5 0.5 0">
+                    <joint name="back_right_slipping_3_joint" class="roller_joint" axis="0 0 1" />
+                    <inertial pos="0 0 0" mass="0.001" diaginertia="5e-8 5e-8 1e-8" />
+                    <geom name="back_right_roller_3_collision" class="collision" type="ellipsoid" size="0.005 0.005 0.015" />
+                </body>
+                <body name="back_right_roller_4_link" pos="-0.01 0 0.0173205081" quat="0.822664388 -0.429766252 0.372188492 0">
+                    <joint name="back_right_slipping_4_joint" class="roller_joint" axis="0 0 1" />
+                    <inertial pos="0 0 0" mass="0.001" diaginertia="5e-8 5e-8 1e-8" />
+                    <geom name="back_right_roller_4_collision" class="collision" type="ellipsoid" size="0.005 0.005 0.015" />
+                </body>
+                <body name="back_right_roller_5_link" pos="-0.0173205081 0 0.01" quat="0.897878732 -0.393765191 0.196882596 0">
+                    <joint name="back_right_slipping_5_joint" class="roller_joint" axis="0 0 1" />
+                    <inertial pos="0 0 0" mass="0.001" diaginertia="5e-8 5e-8 1e-8" />
+                    <geom name="back_right_roller_5_collision" class="collision" type="ellipsoid" size="0.005 0.005 0.015" />
+                </body>
+                <body name="back_right_roller_6_link" pos="-0.02 0 2.4492936e-18" quat="0.923879533 -0.382683432 4.68652041e-17 0">
+                    <joint name="back_right_slipping_6_joint" class="roller_joint" axis="0 0 1" />
+                    <inertial pos="0 0 0" mass="0.001" diaginertia="5e-8 5e-8 1e-8" />
+                    <geom name="back_right_roller_6_collision" class="collision" type="ellipsoid" size="0.005 0.005 0.015" />
+                </body>
+                <body name="back_right_roller_7_link" pos="-0.0173205081 0 -0.01" quat="0.897878732 -0.393765191 -0.196882596 0">
+                    <joint name="back_right_slipping_7_joint" class="roller_joint" axis="0 0 1" />
+                    <inertial pos="0 0 0" mass="0.001" diaginertia="5e-8 5e-8 1e-8" />
+                    <geom name="back_right_roller_7_collision" class="collision" type="ellipsoid" size="0.005 0.005 0.015" />
+                </body>
+                <body name="back_right_roller_8_link" pos="-0.01 0 -0.0173205081" quat="0.822664388 -0.429766252 -0.372188492 0">
+                    <joint name="back_right_slipping_8_joint" class="roller_joint" axis="0 0 1" />
+                    <inertial pos="0 0 0" mass="0.001" diaginertia="5e-8 5e-8 1e-8" />
+                    <geom name="back_right_roller_8_collision" class="collision" type="ellipsoid" size="0.005 0.005 0.015" />
+                </body>
+                <body name="back_right_roller_9_link" pos="-3.6739404e-18 0 -0.02" quat="0.707106781 -0.5 -0.5 0">
+                    <joint name="back_right_slipping_9_joint" class="roller_joint" axis="0 0 1" />
+                    <inertial pos="0 0 0" mass="0.001" diaginertia="5e-8 5e-8 1e-8" />
+                    <geom name="back_right_roller_9_collision" class="collision" type="ellipsoid" size="0.005 0.005 0.015" />
+                </body>
+                <body name="back_right_roller_10_link" pos="0.01 0 -0.0173205081" quat="0.568527312 -0.621875824 -0.538560261 0">
+                    <joint name="back_right_slipping_10_joint" class="roller_joint" axis="0 0 1" />
+                    <inertial pos="0 0 0" mass="0.001" diaginertia="5e-8 5e-8 1e-8" />
+                    <geom name="back_right_roller_10_collision" class="collision" type="ellipsoid" size="0.005 0.005 0.015" />
+                </body>
+                <body name="back_right_roller_11_link" pos="0.0173205081 0 -0.01" quat="0.440242867 -0.803087152 -0.401543576 0">
+                    <joint name="back_right_slipping_11_joint" class="roller_joint" axis="0 0 1" />
+                    <inertial pos="0 0 0" mass="0.001" diaginertia="5e-8 5e-8 1e-8" />
+                    <geom name="back_right_roller_11_collision" class="collision" type="ellipsoid" size="0.005 0.005 0.015" />
+                </body>
+            </body>
+            <body name="back_left_wheel_intermediate_link" pos="-0.1 0.125 -0.01">
+                <inertial pos="0 0 0" mass="0.108" diaginertia="0.000024975 0.00003375 0.000024975" />
+                <joint name="back_left_wheel_rolling_joint" class="wheel_joint" />
+                <geom name="back_left_hub_collision" class="collision" type="cylinder" size="0.008 0.010" quat="0.707106781 0.707106781 0 0" />
+                <geom name="back_left_wheel_visual" class="visual" type="mesh" mesh="wheel_2" rgba="0.15 0.15 0.15 1" />
+                <body name="back_left_roller_0_link" pos="0.02 0 0" quat="0.923879533 -0.382683432 -0 0">
+                    <joint name="back_left_slipping_0_joint" class="roller_joint" axis="0 0 1" />
+                    <inertial pos="0 0 0" mass="0.001" diaginertia="5e-8 5e-8 1e-8" />
+                    <geom name="back_left_roller_0_collision" class="collision" type="ellipsoid" size="0.005 0.005 0.015" />
+                </body>
+                <body name="back_left_roller_1_link" pos="0.0173205081 0 0.01" quat="0.897878732 -0.393765191 -0.196882596 0">
+                    <joint name="back_left_slipping_1_joint" class="roller_joint" axis="0 0 1" />
+                    <inertial pos="0 0 0" mass="0.001" diaginertia="5e-8 5e-8 1e-8" />
+                    <geom name="back_left_roller_1_collision" class="collision" type="ellipsoid" size="0.005 0.005 0.015" />
+                </body>
+                <body name="back_left_roller_2_link" pos="0.01 0 0.0173205081" quat="0.822664388 -0.429766252 -0.372188492 0">
+                    <joint name="back_left_slipping_2_joint" class="roller_joint" axis="0 0 1" />
+                    <inertial pos="0 0 0" mass="0.001" diaginertia="5e-8 5e-8 1e-8" />
+                    <geom name="back_left_roller_2_collision" class="collision" type="ellipsoid" size="0.005 0.005 0.015" />
+                </body>
+                <body name="back_left_roller_3_link" pos="1.2246468e-18 0 0.02" quat="0.707106781 -0.5 -0.5 0">
+                    <joint name="back_left_slipping_3_joint" class="roller_joint" axis="0 0 1" />
+                    <inertial pos="0 0 0" mass="0.001" diaginertia="5e-8 5e-8 1e-8" />
+                    <geom name="back_left_roller_3_collision" class="collision" type="ellipsoid" size="0.005 0.005 0.015" />
+                </body>
+                <body name="back_left_roller_4_link" pos="-0.01 0 0.0173205081" quat="0.568527312 -0.621875824 -0.538560261 0">
+                    <joint name="back_left_slipping_4_joint" class="roller_joint" axis="0 0 1" />
+                    <inertial pos="0 0 0" mass="0.001" diaginertia="5e-8 5e-8 1e-8" />
+                    <geom name="back_left_roller_4_collision" class="collision" type="ellipsoid" size="0.005 0.005 0.015" />
+                </body>
+                <body name="back_left_roller_5_link" pos="-0.0173205081 0 0.01" quat="0.440242867 -0.803087152 -0.401543576 0">
+                    <joint name="back_left_slipping_5_joint" class="roller_joint" axis="0 0 1" />
+                    <inertial pos="0 0 0" mass="0.001" diaginertia="5e-8 5e-8 1e-8" />
+                    <geom name="back_left_roller_5_collision" class="collision" type="ellipsoid" size="0.005 0.005 0.015" />
+                </body>
+                <body name="back_left_roller_6_link" pos="-0.02 0 2.4492936e-18" quat="0.382683432 -0.923879533 -1.13142611e-16 0">
+                    <joint name="back_left_slipping_6_joint" class="roller_joint" axis="0 0 1" />
+                    <inertial pos="0 0 0" mass="0.001" diaginertia="5e-8 5e-8 1e-8" />
+                    <geom name="back_left_roller_6_collision" class="collision" type="ellipsoid" size="0.005 0.005 0.015" />
+                </body>
+                <body name="back_left_roller_7_link" pos="-0.0173205081 0 -0.01" quat="0.440242867 -0.803087152 0.401543576 0">
+                    <joint name="back_left_slipping_7_joint" class="roller_joint" axis="0 0 1" />
+                    <inertial pos="0 0 0" mass="0.001" diaginertia="5e-8 5e-8 1e-8" />
+                    <geom name="back_left_roller_7_collision" class="collision" type="ellipsoid" size="0.005 0.005 0.015" />
+                </body>
+                <body name="back_left_roller_8_link" pos="-0.01 0 -0.0173205081" quat="0.568527312 -0.621875824 0.538560261 0">
+                    <joint name="back_left_slipping_8_joint" class="roller_joint" axis="0 0 1" />
+                    <inertial pos="0 0 0" mass="0.001" diaginertia="5e-8 5e-8 1e-8" />
+                    <geom name="back_left_roller_8_collision" class="collision" type="ellipsoid" size="0.005 0.005 0.015" />
+                </body>
+                <body name="back_left_roller_9_link" pos="-3.6739404e-18 0 -0.02" quat="0.707106781 -0.5 0.5 0">
+                    <joint name="back_left_slipping_9_joint" class="roller_joint" axis="0 0 1" />
+                    <inertial pos="0 0 0" mass="0.001" diaginertia="5e-8 5e-8 1e-8" />
+                    <geom name="back_left_roller_9_collision" class="collision" type="ellipsoid" size="0.005 0.005 0.015" />
+                </body>
+                <body name="back_left_roller_10_link" pos="0.01 0 -0.0173205081" quat="0.822664388 -0.429766252 0.372188492 0">
+                    <joint name="back_left_slipping_10_joint" class="roller_joint" axis="0 0 1" />
+                    <inertial pos="0 0 0" mass="0.001" diaginertia="5e-8 5e-8 1e-8" />
+                    <geom name="back_left_roller_10_collision" class="collision" type="ellipsoid" size="0.005 0.005 0.015" />
+                </body>
+                <body name="back_left_roller_11_link" pos="0.0173205081 0 -0.01" quat="0.897878732 -0.393765191 0.196882596 0">
+                    <joint name="back_left_slipping_11_joint" class="roller_joint" axis="0 0 1" />
+                    <inertial pos="0 0 0" mass="0.001" diaginertia="5e-8 5e-8 1e-8" />
+                    <geom name="back_left_roller_11_collision" class="collision" type="ellipsoid" size="0.005 0.005 0.015" />
+                </body>
+            </body>
+        </body>
+    </worldbody>
+    <!-- Actuator/speed array order: FL, FR, BL, BR. Inputs are wheel torque in N m.
+        X-layout: front-left/back-right roller axes have opposite hand to the other pair. 
+        执行器/速度阵列顺序：前左、前右、后左、后右。输入为轮子扭矩（N·m）。  
+        X轴布局：前左/后右滚轮轴的手柄方向与另一对相反。-->
+    <actuator>
+        <motor name="front_left_motor" joint="front_left_wheel_rolling_joint" ctrllimited="true" ctrlrange="-0.25 0.25" />
+        <motor name="front_right_motor" joint="front_right_wheel_rolling_joint" ctrllimited="true" ctrlrange="-0.25 0.25" />
+        <motor name="back_left_motor" joint="back_left_wheel_rolling_joint" ctrllimited="true" ctrlrange="-0.25 0.25" />
+        <motor name="back_right_motor" joint="back_right_wheel_rolling_joint" ctrllimited="true" ctrlrange="-0.25 0.25" />
+    </actuator>
+    <sensor>
+        <jointvel name="front_left_wheel_speed" joint="front_left_wheel_rolling_joint" />
+        <jointvel name="front_right_wheel_speed" joint="front_right_wheel_rolling_joint" />
+        <jointvel name="back_left_wheel_speed" joint="back_left_wheel_rolling_joint" />
+        <jointvel name="back_right_wheel_speed" joint="back_right_wheel_rolling_joint" />
+        <framepos name="base_position" objtype="body" objname="base_link" />
+        <framequat name="base_orientation" objtype="body" objname="base_link" />
+        <velocimeter name="base_linear_velocity" site="base_imu" />
+        <gyro name="base_angular_velocity" site="base_imu" />
+        <accelerometer name="base_acceleration" site="base_imu" />
+        <rangefinder name="lidar_range" site="lidar_ray" cutoff="8" nsample="2" interval="0.1" />
+    </sensor>
+</mujoco>
